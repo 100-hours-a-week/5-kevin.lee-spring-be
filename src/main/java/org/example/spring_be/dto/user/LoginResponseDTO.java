@@ -1,4 +1,4 @@
-package org.example.spring_be.dto;
+package org.example.spring_be.dto.user;
 
 import lombok.Data;
 

@@ -33,7 +33,7 @@ public class JwtTokenUtil {
     }
 
     public String getUsernameFromToken(String token) {
-        Key key = new SecretKeySpec(secret.getBytes(), SignatureAlgorithm.HS512.getJcaName());
+        Key key = new SecretKeySpec(secret.getBytes(), SignatureAlgorithm.HS256.getJcaName());
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
@@ -47,7 +47,7 @@ public class JwtTokenUtil {
     }
 
     private boolean isTokenExpired(String token) {
-        Key key = new SecretKeySpec(secret.getBytes(), SignatureAlgorithm.HS512.getJcaName());
+        Key key = new SecretKeySpec(secret.getBytes(), SignatureAlgorithm.HS256.getJcaName());
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()

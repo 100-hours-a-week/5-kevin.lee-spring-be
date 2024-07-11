@@ -1,8 +1,10 @@
 package org.example.spring_be.service;
 
-import org.example.spring_be.dto.LoginRequestDTO;
-import org.example.spring_be.dto.LoginResponseDTO;
-import org.example.spring_be.dto.SignupRequestDTO;
+import jakarta.transaction.Transactional;
+import org.example.spring_be.dto.user.LoginRequestDTO;
+import org.example.spring_be.dto.user.LoginResponseDTO;
+import org.example.spring_be.dto.user.SignupRequestDTO;
+import org.example.spring_be.dto.user.UpdateUserRequestDTO;
 import org.example.spring_be.model.Authority;
 import org.example.spring_be.model.UserRole;
 import org.example.spring_be.model.Userinfo;
@@ -22,6 +24,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -79,7 +82,7 @@ public class UserService implements UserDetailsService {
         userinfo.setPassword(passwordEncoder.encode(signupRequestDTO.getPassword()));
         userinfo.setNickname(signupRequestDTO.getNickname());
         userinfo.setEnabled(true);
-        userinfo.setDeleted_at(null);
+        userinfo.setDeletedAt(null);
 
         Authority verifiedAuthority = authorityRepository.findByAuthority(UserRole.VERIFIED.getValue())
                 .orElseGet(() -> {
@@ -92,13 +95,46 @@ public class UserService implements UserDetailsService {
 
 
         Userinfo savedUserinfo = userRepository.save(userinfo);
-        //System.out.println(savedUserinfo.toString());
-        System.out.println("userinfo.toString() = " + userinfo.getCreated_at());
+        System.out.println("userinfo.toString() = " + userinfo.getCreatedAt());
         return Optional.of(savedUserinfo);
     }
 
+    public Optional<Userinfo> getUserByEmail(String email) {
+        return userRepository.findByEmail(email);
 
+    }
 
+    @Transactional
+    public Userinfo updateUserNickname(Long user_id, UpdateUserRequestDTO updatedInfo){
+        Userinfo userinfo = userRepository.findByUserId(user_id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (updatedInfo.getNickname() != null) {
+            userinfo.setNickname(updatedInfo.getNickname());
+        }
+
+        return userRepository.save(userinfo);
+    }
+
+    public Boolean checkNickDup(String nickname){
+        return userRepository.existsByNickname(nickname);
+    }
+
+    @Transactional
+    public Userinfo deleteUser(Long userId){
+        Optional<Userinfo> optionalUserinfo = userRepository.findByUserId(userId);
+
+        if(optionalUserinfo.isEmpty()){
+            throw new RuntimeException("User not found");
+        }else{
+            Userinfo userinfo = optionalUserinfo.get();
+            userinfo.setEnabled(false);
+            userinfo.setDeletedAt(LocalDateTime.now());
+            userRepository.save(userinfo);
+
+            return userinfo;
+        }
+    }
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Optional<Userinfo> userOptional = userRepository.findByEmail(email);
@@ -114,7 +150,17 @@ public class UserService implements UserDetailsService {
                 .build();
     }
 
-    public Boolean testToken2(String inputToken){
-        return jwtTokenUtil.validateToken(inputToken);
+
+    public Userinfo alterPassword(Long userId, String password) {
+        Optional<Userinfo> optionalUserinfo = userRepository.findByUserId(userId);
+
+        if(optionalUserinfo.isEmpty()){
+            throw new RuntimeException("not found");
+        }else{
+            Userinfo userinfo = optionalUserinfo.get();
+            userinfo.setPassword(passwordEncoder.encode(password));
+            return userRepository.save(userinfo);
+        }
+
     }
 }
